@@ -1,0 +1,15 @@
+# macOS folder-icon file (name ends in a hidden character, so use ?)
+Icon?
+# Other macOS clutter
+.DS_Store
+
+# Local Claude Code instructions, not project code
+CLAUDE.md
+
+# Datasets: too large for GitHub, download from the source instead
+model/data/
+
+# Python virtual environment and caches
+model/.venv/
+__pycache__/
+.ipynb_checkpoints/
