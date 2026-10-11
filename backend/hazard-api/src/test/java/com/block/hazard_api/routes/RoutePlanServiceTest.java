@@ -3,6 +3,7 @@ package com.block.hazard_api.routes;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.block.hazard_api.hazards.Hazard;
+import com.block.hazard_api.hazards.HazardCategory;
 import com.block.hazard_api.hazards.HazardFetcher;
 import com.block.hazard_api.hazards.HazardService;
 import com.block.hazard_api.hazards.LatLng;
@@ -65,7 +66,7 @@ class RoutePlanServiceTest {
      * A Winter Storm Warning on route-1 near Modesto (a small square around 37.459, -120.755).
      * route-2 passes about 0.1° north of it, so only route-1 crosses it.
      */
-    static final Hazard STORM = new Hazard("nws-test", "NWS", "Winter Storm Warning",
+    static final Hazard STORM = new Hazard("nws-test", "NWS", "Winter Storm Warning", HazardCategory.STORM,
             "Winter Storm Warning until Monday", 0.75, 37.459, -120.755, 8,
             List.of(List.of(-120.805, 37.409), List.of(-120.705, 37.409), List.of(-120.705, 37.509),
                     List.of(-120.805, 37.509), List.of(-120.805, 37.409)), null, null);

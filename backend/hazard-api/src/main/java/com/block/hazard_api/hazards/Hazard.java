@@ -7,6 +7,7 @@ import java.util.List;
  * One hazard in a single common shape, no matter which source it came from.
  * This is the JSON the app receives from GET /hazards.
  *
+ * category: heat, fire, storm, flood or other (for app icons/filters)
  * severity: 0.0 (minor) to 1.0 (avoid at all costs)
  * lat/lon:  center of the hazard
  * radiusKm: rough size of the affected area
@@ -16,6 +17,7 @@ public record Hazard(
         String id,        //identifier for a hazard
         String source,    // "USGS", "NWS", websites where weather is coming from
         String type,      // "earthquake", "Winter Storm Warning", ...
+        HazardCategory category, // simple group of the type: heat, fire, storm, flood, other
         String headline,  //what we end up printing/showing for the hazard
         double severity, //explained above    
         double lat,      

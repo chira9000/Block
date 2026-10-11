@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.block.hazard_api.hazards.BoundingBox;
 import com.block.hazard_api.hazards.Hazard;
+import com.block.hazard_api.hazards.HazardCategory;
 import com.block.hazard_api.hazards.LatLng;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ class HazardCrossingsTest {
     static Hazard square(String type, String headline, double severity, double lon1, double lon2) {
         List<List<Double>> poly = List.of(List.of(lon1, 33.0), List.of(lon2, 33.0),
                 List.of(lon2, 34.0), List.of(lon1, 34.0), List.of(lon1, 33.0));
-        return new Hazard("id-" + type + lon1, "NWS", type, headline, severity,
+        return new Hazard("id-" + type + lon1, "NWS", type, HazardCategory.fromNwsEvent(type), headline, severity,
                 33.5, (lon1 + lon2) / 2, 60, poly, null, null);
     }
 
@@ -36,7 +37,7 @@ class HazardCrossingsTest {
 
     @Test
     void hazardOffTheRouteIsNotListed() {
-        Hazard north = new Hazard("n", "NWS", "Heat Advisory", "heat", 0.5, 36.0, -117.5, 20,
+        Hazard north = new Hazard("n", "NWS", "Heat Advisory", HazardCategory.HEAT, "heat", 0.5, 36.0, -117.5, 20,
                 List.of(List.of(-118.0, 35.5), List.of(-117.0, 35.5), List.of(-117.0, 36.5),
                         List.of(-118.0, 36.5), List.of(-118.0, 35.5)), null, null);
         assertTrue(HazardCrossings.crossed(ROUTE, List.of(north)).isEmpty());
@@ -53,8 +54,8 @@ class HazardCrossingsTest {
 
     @Test
     void hazardWithoutPolygonUsesItsRadius() {
-        Hazard near = new Hazard("p", "X", "Flooding", "gauge", 0.5, 33.6, -117.0, 15, null, null, null); // ~11 km away
-        Hazard far = new Hazard("q", "X", "Flooding", "gauge", 0.5, 34.5, -117.0, 15, null, null, null);  // ~111 km away
+        Hazard near = new Hazard("p", "X", "Flooding", HazardCategory.FLOOD, "gauge", 0.5, 33.6, -117.0, 15, null, null, null); // ~11 km away
+        Hazard far = new Hazard("q", "X", "Flooding", HazardCategory.FLOOD, "gauge", 0.5, 34.5, -117.0, 15, null, null, null);  // ~111 km away
         assertEquals(1, HazardCrossings.crossed(ROUTE, List.of(near, far)).size());
     }
 

@@ -72,7 +72,7 @@ public class NwsAlertFetcher implements HazardFetcher {
             Instant expires = parseTime(p.ends() != null ? p.ends() : p.expires());
 
             out.add(new Hazard(
-                    "nws-" + p.id(), "NWS", p.event(), p.headline(),
+                    "nws-" + p.id(), "NWS", p.event(), HazardCategory.fromNwsEvent(p.event()), p.headline(),
                     severityScore(p.severity()), center.lat(), center.lng(), radiusKm,
                     ring, starts, expires));
         }
