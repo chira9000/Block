@@ -2,6 +2,9 @@ package com.block.hazard_api.routes;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.block.hazard_api.hazards.Hazard;
+import com.block.hazard_api.hazards.HazardFetcher;
+import com.block.hazard_api.hazards.HazardService;
 import com.block.hazard_api.hazards.LatLng;
 import com.block.hazard_api.scoring.CoefficientRouteScorer;
 import com.block.hazard_api.scoring.RouteScorer;
@@ -58,8 +61,26 @@ class RoutePlanServiceTest {
         }
     }
 
+    /**
+     * A Winter Storm Warning on route-1 near Modesto (a small square around 37.459, -120.755).
+     * route-2 passes about 0.1° north of it, so only route-1 crosses it.
+     */
+    static final Hazard STORM = new Hazard("nws-test", "NWS", "Winter Storm Warning",
+            "Winter Storm Warning until Monday", 0.75, 37.459, -120.755, 8,
+            List.of(List.of(-120.805, 37.409), List.of(-120.705, 37.409), List.of(-120.705, 37.509),
+                    List.of(-120.805, 37.509), List.of(-120.805, 37.409)), null, null);
+
+    /** HazardService with one fake source, so no NWS call is made. */
+    private static HazardService hazards(List<Hazard> list) {
+        HazardFetcher fake = new HazardFetcher() {
+            public String sourceName() { return "FAKE"; }
+            public List<Hazard> fetch() { return list; }
+        };
+        return new HazardService(List.of(fake));
+    }
+
     private static RoutePlanService service(FakeRoutes routes, NwsForecastClient nws, RouteScorer scorer) {
-        return new RoutePlanService(routes, nws, new KeywordWeatherBucketMapper(), scorer);
+        return new RoutePlanService(routes, nws, new KeywordWeatherBucketMapper(), scorer, hazards(List.of(STORM)));
     }
 
     private static RoutePlanRequest request(String produce, Instant departure) {
@@ -99,6 +120,22 @@ class RoutePlanServiceTest {
         assertEquals("route-1", best.routeId());
         assertEquals(170 * 1.0869565217391304, best.predictedTotalDurationMin(), 0.2);
         assertTrue(best.reason().contains("min of weather delay"), best.reason());
+    }
+
+    @Test
+    void listsHazardsEachRouteCrosses() {
+        RoutePlanResponse res = service(new FakeRoutes(), new FakeForecasts(p -> true), new StubRouteScorer())
+                .plan(request("strawberries", DEPART));
+
+        RoutePlanResponse.PlannedRoute r1 = res.routes().get(0), r2 = res.routes().get(1);
+        assertEquals("route-1", r1.routeId());
+        assertEquals(List.of(new RoutePlanResponse.HazardCrossed(
+                "Winter Storm Warning", "Winter Storm Warning until Monday", 0.75)), r1.hazardsCrossed());
+        assertTrue(r1.reason().contains("crosses Winter Storm Warning (severe)"), r1.reason());
+        assertTrue(r1.reason().startsWith("Best option: "), r1.reason());
+
+        assertTrue(r2.hazardsCrossed().isEmpty());
+        assertTrue(r2.reason().contains("no active weather alerts"), r2.reason());
     }
 
     @Test

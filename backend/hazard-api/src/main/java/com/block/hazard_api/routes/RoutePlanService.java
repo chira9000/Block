@@ -1,5 +1,8 @@
 package com.block.hazard_api.routes;
 
+import com.block.hazard_api.hazards.GeoUtil;
+import com.block.hazard_api.hazards.HazardService;
+import com.block.hazard_api.hazards.LatLng;
 import com.block.hazard_api.scoring.RouteRanker;
 import com.block.hazard_api.scoring.RouteScorer;
 import com.block.hazard_api.scoring.ScoreRequest;
@@ -26,7 +29,7 @@ import org.springframework.stereotype.Service;
 /**
  * The whole pipeline for one trip (backend/CLAUDE.md "Backend pipeline"):
  * Google routes -> sample points + ETAs -> NWS forecast at each ETA -> weather bucket
- * -> scorer -> rank by shelf life left.
+ * -> scorer -> rank by shelf life left, plus the active hazards each route goes through.
  */
 @Service
 public class RoutePlanService {
@@ -40,16 +43,18 @@ public class RoutePlanService {
     private final NwsForecastClient forecasts;
     private final WeatherBucketMapper bucketMapper;
     private final RouteScorer scorer;
+    private final HazardService hazards;
 
     // NWS lookups run 8 at a time; one by one, a long trip would take ~30 seconds.
     private final ExecutorService pool = Executors.newFixedThreadPool(8);
 
     public RoutePlanService(RoutesApiClient routesApi, NwsForecastClient forecasts,
-                            WeatherBucketMapper bucketMapper, RouteScorer scorer) {
+                            WeatherBucketMapper bucketMapper, RouteScorer scorer, HazardService hazards) {
         this.routesApi = routesApi;
         this.forecasts = forecasts;
         this.bucketMapper = bucketMapper;
         this.scorer = scorer;
+        this.hazards = hazards;
     }
 
     @PreDestroy
@@ -94,8 +99,9 @@ public class RoutePlanService {
         for (ScoreResponse.RouteScore s : RouteRanker.rank(scores.routes())) {
             CandidateRoute c = candidateById.get(s.routeId());
             RouteWeather w = weatherById.get(s.routeId());
+            List<RoutePlanResponse.HazardCrossed> crossed = hazardsAlong(c);
             cards.add(new RoutePlanResponse.PlannedRoute(
-                    rank++,
+                    rank,
                     s.routeId(),
                     c.encodedPolyline(),
                     round1(c.distanceKm()),
@@ -103,11 +109,19 @@ public class RoutePlanService {
                     round1(s.predictedTotalDurationMin()),
                     round1(s.shelfLifeRemainingPct()),
                     round1(s.peakCargoTempC()),
-                    List.of(), // filled in by Task 7
-                    RouteReasons.reason(s.shelfLifeRemainingPct(), s.predictedDelayMin(),
+                    crossed,
+                    RouteReasons.reason(rank, s.shelfLifeRemainingPct(), s.predictedDelayMin(), crossed,
                             w.pointsWithoutForecast(), w.points().size())));
+            rank++;
         }
         return new RoutePlanResponse(scores.modelVersion(), cards);
+    }
+
+    /** Active hazards this route goes through (Task 7), checked on the full polyline. */
+    private List<RoutePlanResponse.HazardCrossed> hazardsAlong(CandidateRoute c) {
+        List<LatLng> line = GeoUtil.decodePolyline(c.encodedPolyline());
+        if (line.isEmpty()) return List.of();
+        return HazardCrossings.crossed(line, hazards.getHazards(HazardCrossings.boxAround(line)));
     }
 
     static void validate(RoutePlanRequest req) {
