@@ -27,12 +27,12 @@ import tools.jackson.databind.json.JsonMapper;
 public final class RiskModelV2 {
 
     // Route formula constants
-    static final double ENCOUNTERS_PER_100KM = 0.3;       // ASSUMPTION: delaying incidents a truck meets per
-                                                          // 100 km on an average road at an average time
+    // Delaying incidents a truck meets per 100 km on an average road: calibrated to PEMS-BAY 2017
+    // incident-caused jams, scaled to the average road; lower-end estimate
+    static final double ENCOUNTERS_PER_100KM = 0.013;
     static final double MINOR_INCIDENT_DELAY_MIN = 10.0;  // ASSUMPTION: truck delay from a minor incident
     static final double MAJOR_INCIDENT_DELAY_MIN = 30.0;  // ASSUMPTION: truck delay from a major slowdown
     static final double MAX_INCIDENT_DELAY_MIN = 120.0;   // cap on a route's expected incident delay
-    static final double RISK_SCORE_SCALE_MIN = 30.0;      // 30 min expected delay -> risk score 63
 
     /** The parts of risk_model_meta.json the backend needs. */
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -208,7 +208,7 @@ public final class RiskModelV2 {
      *     = ENCOUNTERS_PER_100KM * (km / 100) * (p_incident / network-average p).
      */
     public RouteNumbers combine(List<PointRisk> points) {
-        double incidentKm = 0, baseKm = 0, delay = 0, noMajor = 1;
+        double incidentKm = 0, baseKm = 0, delay = 0, noMajor = 1, noIncident = 1;
         for (int i = 0; i + 1 < points.size(); i++) {
             PointRisk a = points.get(i), b = points.get(i + 1);
             double km = GeoUtil.haversineKm(a.lat(), a.lon(), b.lat(), b.lon());
@@ -219,10 +219,12 @@ public final class RiskModelV2 {
             baseKm += a.placeRate2021() * km;
             delay += e * (ms * MAJOR_INCIDENT_DELAY_MIN + (1 - ms) * MINOR_INCIDENT_DELAY_MIN);
             noMajor *= 1 - Math.min(1.0, e * ms);
+            noIncident *= 1 - Math.min(1.0, e);
         }
         delay = Math.min(delay, MAX_INCIDENT_DELAY_MIN);
         Double ratio = baseKm > 0 ? incidentKm / baseKm : null;
-        int score = (int) Math.round(100 * (1 - Math.exp(-delay / RISK_SCORE_SCALE_MIN)));
+        // riskScore = % chance of meeting at least one delaying incident on the route
+        int score = (int) Math.round(100 * (1 - noIncident));
         return new RouteNumbers(delay, 1 - noMajor, ratio, score);
     }
 

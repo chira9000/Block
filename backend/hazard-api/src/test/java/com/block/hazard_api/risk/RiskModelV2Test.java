@@ -104,10 +104,19 @@ class RiskModelV2Test {
 
     @Test
     void goldenRoutesCoverTheCapAndTheHalfUnknownEdge() {
-        assertTrue(golden.routes().stream().anyMatch(r -> r.expected().uncappedIncidentDelayMin() > 120
-                && r.expected().expectedIncidentDelayMin() == 120), "a route must hit the 120 min cap");
-        assertTrue(golden.routes().stream().anyMatch(r -> r.expected().uncappedIncidentDelayMin() < 120
-                && r.expected().expectedIncidentDelayMin() == r.expected().uncappedIncidentDelayMin()));
+        for (Golden.Route r : golden.routes()) {
+            assertEquals(Math.min(r.expected().uncappedIncidentDelayMin(), 120), r.expected().expectedIncidentDelayMin(),
+                    0.0, r.name());
+        }
+        // Force the cap: 1,000 km at 1,000x the network-average incident rate
+        double meanP = model.meta().overallMeanP2021();
+        var a = new RiskModelV2.PointRisk(36.0, -120.0, "x", true, new double[0], 0, 0, meanP, meanP, 0,
+                1000 * meanP, 0.5, List.of());
+        var b = new RiskModelV2.PointRisk(45.0, -120.0, "y", true, new double[0], 0, 0, meanP, meanP, 0,
+                1000 * meanP, 0.5, List.of());
+        RiskModelV2.RouteNumbers capped = model.combine(List.of(a, b));
+        assertEquals(120.0, capped.expectedIncidentDelayMin(), 0.0);
+        assertEquals(100, capped.riskScore());
         // half_unknown: exactly 2 of 4 points unknown -> NOT low confidence (needs MORE than half)
         Golden.Route half = golden.routes().stream().filter(r -> r.name().equals("half_unknown")).findFirst().orElseThrow();
         long unknown = half.sampleIndices().stream().filter(i -> !golden.samples().get(i).knownCell()).count();
@@ -118,7 +127,7 @@ class RiskModelV2Test {
     @Test
     void encounterFormulaByHand() {
         // One 100 km segment on an average road (p_incident = network mean), all minor incidents:
-        // e = 0.3 * 1 * 1 = 0.3 encounters -> 0.3 * 10 min = 3 min, ratio = p/place_rate
+        // e = 0.013 * 1 * 1 = 0.013 encounters -> 0.13 min, risk = 1.3% -> 1, ratio = p/place_rate
         double meanP = model.meta().overallMeanP2021();
         var a = new RiskModelV2.PointRisk(36.0, -120.0, "x", true, new double[0], 0, 0, meanP, meanP, 0, meanP, 0.0,
                 List.of());
@@ -126,17 +135,16 @@ class RiskModelV2Test {
         var b = new RiskModelV2.PointRisk(36.0, -120.0 + lonFor100Km, "y", true, new double[0], 0, 0, meanP, meanP, 0,
                 meanP, 0.0, List.of());
         RiskModelV2.RouteNumbers n = model.combine(List.of(a, b));
-        assertEquals(3.0, n.expectedIncidentDelayMin(), 0.01); // ~100 km along a parallel
+        assertEquals(0.13, n.expectedIncidentDelayMin(), 0.001); // ~100 km along a parallel
         assertEquals(1.0, n.incidentRiskRatio(), 1e-12);
         assertEquals(0.0, n.majorSlowdownProbability(), 0.0);
-        assertEquals(10, n.riskScore()); // 100 * (1 - e^-0.1) = 9.5 -> 10
+        assertEquals(1, n.riskScore()); // 100 * 0.013 = 1.3 -> 1
     }
 
     @Test
-    void riskScoreFollowsTheFormula() {
-        // 30 min expected delay -> 100 * (1 - e^-1) = 63
-        double delay = 30.0;
-        assertEquals(63, (int) Math.round(100 * (1 - Math.exp(-delay / RiskModelV2.RISK_SCORE_SCALE_MIN))));
+    void riskScoreIsChanceOfAtLeastOneIncident() {
+        // e = 0.013 per 100 km on an average road -> 1,000 km = 10 segments: 1 - 0.987^10 = 12.3% -> 12
+        assertEquals(12, (int) Math.round(100 * (1 - Math.pow(1 - RiskModelV2.ENCOUNTERS_PER_100KM, 10))));
     }
 
     // ---------------------------------------------------------------- flags and the service

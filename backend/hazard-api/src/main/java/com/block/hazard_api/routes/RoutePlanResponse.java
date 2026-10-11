@@ -21,14 +21,14 @@ public record RoutePlanResponse(
             List<HazardCrossed> hazardsCrossed,
             String reason,                     // short human-readable explanation
             // v2 risk model; all null when the risk part is unavailable
-            Integer riskScore,                 // 0-100 from expected incident delay
+            Integer riskScore,                 // % chance of meeting at least one delaying incident
             Double incidentRiskRatio,          // incident risk vs normal for these roads (1.0 = normal)
             Double expectedIncidentDelayMin,   // already included in predictedTotalDurationMin
             Double majorSlowdownProbability,   // chance of at least one major slowdown, 0-1
             List<String> riskFlags,            // e.g. "winter_closure_or_chains"
             List<String> riskReasons,          // up to 3 one-line reasons
             String riskModelVersion,
-            Boolean riskLowConfidence          // true if some points are on roads the model hasn't seen
+            Boolean riskLowConfidence          // true if more than half the points are on roads the model hasn't seen
     ) {
         /** Route card without risk fields. */
         public PlannedRoute(int rank, String routeId, String encodedPolyline, double distanceKm,

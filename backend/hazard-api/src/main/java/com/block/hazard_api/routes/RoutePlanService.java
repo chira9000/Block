@@ -189,4 +189,62 @@ public class RoutePlanService {
      * route has a forecast, use "cloudy" with no weather values: the table's neutral default,
      * adding no weather delay. Either way the route's reason text says how many points had none.
      */
-    RouteWeathe
+    RouteWeather weatherAlong(List<SampledPoint> samples) {
+        List<Future<Optional<PointForecast>>> futures = new ArrayList<>();
+        for (SampledPoint sp : samples) {
+            futures.add(pool.submit(() -> forecasts.forecastAt(sp.point(), sp.eta())));
+        }
+        List<PointForecast> found = new ArrayList<>(); // null where NWS had nothing
+        int missing = 0;
+        for (Future<Optional<PointForecast>> f : futures) {
+            PointForecast pf = getQuietly(f);
+            if (pf == null) missing++;
+            found.add(pf);
+        }
+
+        List<ScoreRequest.Point> points = new ArrayList<>();
+        for (int i = 0; i < samples.size(); i++) {
+            SampledPoint sp = samples.get(i);
+            PointForecast pf = nearestFound(found, i);
+            if (pf == null) {
+                points.add(new ScoreRequest.Point(sp.point().lat(), sp.point().lng(), sp.eta(),
+                        null, null, null, WeatherBucket.CLOUDY));
+            } else {
+                points.add(new ScoreRequest.Point(sp.point().lat(), sp.point().lng(), sp.eta(),
+                        pf.temperatureC(), pf.windSpeedKmh(),
+                        null, // precip_mm_per_hr: open team question, NWS hourly has no amount
+                        bucketMapper.map(pf.shortForecast(), pf.precipChancePct())));
+            }
+        }
+        if (missing > 0) log.info("No NWS forecast for {} of {} points; used fallback", missing, samples.size());
+        return new RouteWeather(points, missing);
+    }
+
+    /** found.get(i) if present, else the closest index (either direction) that has one, else null. */
+    static PointForecast nearestFound(List<PointForecast> found, int i) {
+        for (int d = 0; d < found.size(); d++) {
+            if (i - d >= 0 && found.get(i - d) != null) return found.get(i - d);
+            if (i + d < found.size() && found.get(i + d) != null) return found.get(i + d);
+        }
+        return null;
+    }
+
+    private static PointForecast getQuietly(Future<Optional<PointForecast>> f) {
+        try {
+            return f.get().orElse(null);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    private static double round1(double x) {
+        return Math.round(x * 10) / 10.0;
+    }
+}

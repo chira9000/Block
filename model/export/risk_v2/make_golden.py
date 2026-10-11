@@ -29,11 +29,11 @@ INCIDENT = lgb.Booster(model_file=str(HERE / "incident_model.txt"))
 MAJOR = lgb.Booster(model_file=str(HERE / "major_model.txt"))
 
 # Route formula constants (named ASSUMPTIONs, same values as the Java code)
-ENCOUNTERS_PER_100KM = 0.3     # ASSUMPTION: delaying incidents a truck meets per 100 km, average road and time
+# calibrated to PEMS-BAY 2017 incident-caused jams, scaled to the average road; lower-end estimate
+ENCOUNTERS_PER_100KM = 0.013
 MINOR_INCIDENT_DELAY_MIN = 10  # ASSUMPTION
 MAJOR_INCIDENT_DELAY_MIN = 30  # ASSUMPTION
 MAX_INCIDENT_DELAY_MIN = 120   # cap on expected incident delay per route
-RISK_SCORE_SCALE_MIN = 30
 CAP_LOW, CAP_HIGH = META["route_formula"]["cap_low"], META["route_formula"]["cap_high"]
 
 
@@ -179,7 +179,7 @@ def build_samples():
 def route_result(points):
     """points: list of per-point dicts (lat, lon, p_incident, major_share, place_rate, known)."""
     incident_km = base_km = delay = 0.0
-    no_major = 1.0
+    no_major = no_incident = 1.0
     for a, b in zip(points[:-1], points[1:]):  # each point covers the segment to the next one
         km = haversine_km(a["lat"], a["lon"], b["lat"], b["lon"])
         rel_network = a["p_incident"] / META["overall_mean_p_2021"]
@@ -189,6 +189,7 @@ def route_result(points):
         ms = a["major_share"]
         delay += e * (ms * MAJOR_INCIDENT_DELAY_MIN + (1 - ms) * MINOR_INCIDENT_DELAY_MIN)
         no_major *= 1 - min(1.0, e * ms)
+        no_incident *= 1 - min(1.0, e)
     uncapped = delay
     delay = min(delay, MAX_INCIDENT_DELAY_MIN)
     unknown = sum(not p["known"] for p in points)
@@ -198,7 +199,8 @@ def route_result(points):
         "expected_incident_delay_min": delay,
         "major_slowdown_probability": 1 - no_major,
         "incident_risk_ratio": incident_km / base_km,
-        "risk_score": int(np.floor(100 * (1 - math.exp(-delay / RISK_SCORE_SCALE_MIN)) + 0.5)),  # Math.round
+        # % chance of meeting at least one delaying incident (Java Math.round)
+        "risk_score": int(np.floor(100 * (1 - no_incident) + 0.5)),
     }
 
 
@@ -259,7 +261,7 @@ def main():
         "constants": {"encounters_per_100km": ENCOUNTERS_PER_100KM,
                       "minor_incident_delay_min": MINOR_INCIDENT_DELAY_MIN,
                       "major_incident_delay_min": MAJOR_INCIDENT_DELAY_MIN,
-                      "max_incident_delay_min": MAX_INCIDENT_DELAY_MIN, "risk_score_scale_min": RISK_SCORE_SCALE_MIN},
+                      "max_incident_delay_min": MAX_INCIDENT_DELAY_MIN},
         "samples": out_samples,
         "routes": routes,
     }

@@ -5,11 +5,10 @@
     "h3": "4.4.2"
   },
   "constants": {
-    "encounters_per_100km": 0.3,
+    "encounters_per_100km": 0.013,
     "minor_incident_delay_min": 10,
     "major_incident_delay_min": 30,
-    "max_incident_delay_min": 120,
-    "risk_score_scale_min": 30
+    "max_incident_delay_min": 120
   },
   "samples": [
     {
@@ -1725,12 +1724,12 @@
         11
       ],
       "expected": {
-        "uncapped_incident_delay_min": 577.7272688361733,
+        "uncapped_incident_delay_min": 25.034848316234175,
         "low_confidence": false,
-        "expected_incident_delay_min": 120,
-        "major_slowdown_probability": 1.0,
+        "expected_incident_delay_min": 25.034848316234175,
+        "major_slowdown_probability": 0.3779588657194678,
         "incident_risk_ratio": 1.1690209942375456,
-        "risk_score": 98
+        "risk_score": 100
       }
     },
     {
@@ -1744,63 +1743,14 @@
         5
       ],
       "expected": {
-        "uncapped_incident_delay_min": 232.1737169776437,
+        "uncapped_incident_delay_min": 10.060861069031226,
         "low_confidence": false,
-        "expected_incident_delay_min": 120,
-        "major_slowdown_probability": 1.0,
+        "expected_incident_delay_min": 10.060861069031226,
+        "major_slowdown_probability": 0.1392256058594633,
         "incident_risk_ratio": 1.4292441006011156,
-        "risk_score": 98
+        "risk_score": 64
       }
     },
     {
       "name": "with_unknown",
-      "sample_indices": [
-        15,
-        16,
-        17,
-        18
-      ],
-      "expected": {
-        "uncapped_incident_delay_min": 13.1749596664854,
-        "low_confidence": true,
-        "expected_incident_delay_min": 13.1749596664854,
-        "major_slowdown_probability": 0.056862801892075265,
-        "incident_risk_ratio": 1.1675237820824522,
-        "risk_score": 36
-      }
-    },
-    {
-      "name": "quiet_known",
-      "sample_indices": [
-        19,
-        7,
-        6
-      ],
-      "expected": {
-        "uncapped_incident_delay_min": 104.10626606946066,
-        "low_confidence": false,
-        "expected_incident_delay_min": 104.10626606946066,
-        "major_slowdown_probability": 0.8151440880180152,
-        "incident_risk_ratio": 1.3732849993047647,
-        "risk_score": 97
-      }
-    },
-    {
-      "name": "half_unknown",
-      "sample_indices": [
-        8,
-        0,
-        18,
-        1
-      ],
-      "expected": {
-        "uncapped_incident_delay_min": 0.2744393006273535,
-        "low_confidence": false,
-        "expected_incident_delay_min": 0.2744393006273535,
-        "major_slowdown_probability": 0.001342943716383993,
-        "incident_risk_ratio": 0.5919615332060908,
-        "risk_score": 1
-      }
-    }
-  ]
-}
+      "sample_i
