@@ -27,9 +27,11 @@ import tools.jackson.databind.json.JsonMapper;
 public final class RiskModelV2 {
 
     // Route formula constants
-    static final double CELL_KM = 2.5;                    // one H3 res-7 cell is about 2.5 km across
+    static final double ENCOUNTERS_PER_100KM = 0.3;       // ASSUMPTION: delaying incidents a truck meets per
+                                                          // 100 km on an average road at an average time
     static final double MINOR_INCIDENT_DELAY_MIN = 10.0;  // ASSUMPTION: truck delay from a minor incident
     static final double MAJOR_INCIDENT_DELAY_MIN = 30.0;  // ASSUMPTION: truck delay from a major slowdown
+    static final double MAX_INCIDENT_DELAY_MIN = 120.0;   // cap on a route's expected incident delay
     static final double RISK_SCORE_SCALE_MIN = 30.0;      // 30 min expected delay -> risk score 63
 
     /** The parts of risk_model_meta.json the backend needs. */
@@ -200,23 +202,34 @@ public final class RiskModelV2 {
 
     // ------------------------------------------------------------------ route formula
 
-    /** Combines route points in driving order; each point covers the segment to the next point. */
+    /**
+     * Combines route points in driving order; each point covers the segment to the next point.
+     * e_i = expected delaying incidents met on that segment
+     *     = ENCOUNTERS_PER_100KM * (km / 100) * (p_incident / network-average p).
+     */
     public RouteNumbers combine(List<PointRisk> points) {
-        double exposureH = meta.avgIncidentDurationMin2021() / 60.0;
-        double eSum = 0, baseSum = 0, delay = 0, noMajor = 1;
+        double incidentKm = 0, baseKm = 0, delay = 0, noMajor = 1;
         for (int i = 0; i + 1 < points.size(); i++) {
             PointRisk a = points.get(i), b = points.get(i + 1);
-            double cellsCrossed = GeoUtil.haversineKm(a.lat(), a.lon(), b.lat(), b.lon()) / CELL_KM;
-            double e = a.pIncident() * cellsCrossed * exposureH;
+            double km = GeoUtil.haversineKm(a.lat(), a.lon(), b.lat(), b.lon());
+            double relNetwork = a.pIncident() / meta.overallMeanP2021();
+            double e = ENCOUNTERS_PER_100KM * (km / 100) * relNetwork;
             double ms = a.majorShare();
-            eSum += e;
-            baseSum += a.placeRate2021() * cellsCrossed * exposureH;
+            incidentKm += a.pIncident() * km;
+            baseKm += a.placeRate2021() * km;
             delay += e * (ms * MAJOR_INCIDENT_DELAY_MIN + (1 - ms) * MINOR_INCIDENT_DELAY_MIN);
             noMajor *= 1 - Math.min(1.0, e * ms);
         }
-        Double ratio = baseSum > 0 ? eSum / baseSum : null;
+        delay = Math.min(delay, MAX_INCIDENT_DELAY_MIN);
+        Double ratio = baseKm > 0 ? incidentKm / baseKm : null;
         int score = (int) Math.round(100 * (1 - Math.exp(-delay / RISK_SCORE_SCALE_MIN)));
         return new RouteNumbers(delay, 1 - noMajor, ratio, score);
+    }
+
+    /** Low confidence when MORE THAN HALF of the points are on road cells the model hasn't seen. */
+    static boolean lowConfidence(List<PointRisk> points) {
+        long unknown = points.stream().filter(p -> !p.knownCell()).count();
+        return unknown * 2 > points.size();
     }
 
     /**

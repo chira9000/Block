@@ -63,7 +63,9 @@ final class Golden {
                  @JsonProperty("expected") Expected expected) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Expected(@JsonProperty("expected_incident_delay_min") double expectedIncidentDelayMin,
+    record Expected(@JsonProperty("uncapped_incident_delay_min") double uncappedIncidentDelayMin,
+                    @JsonProperty("low_confidence") boolean lowConfidence,
+                    @JsonProperty("expected_incident_delay_min") double expectedIncidentDelayMin,
                     @JsonProperty("major_slowdown_probability") double majorSlowdownProbability,
                     @JsonProperty("incident_risk_ratio") double incidentRiskRatio,
                     @JsonProperty("risk_score") int riskScore) {}

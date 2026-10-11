@@ -57,7 +57,7 @@ public class RiskService {
         }
         RiskModelV2.RouteNumbers n = model.combine(pointRisks);
         Map<String, String> flags = RiskModelV2.flags(pointRisks);
-        boolean lowConfidence = pointRisks.stream().anyMatch(p -> !p.knownCell());
+        boolean lowConfidence = RiskModelV2.lowConfidence(pointRisks);
         return new RouteRisk(
                 n.riskScore(),
                 n.incidentRiskRatio() == null ? null : round(n.incidentRiskRatio(), 2),

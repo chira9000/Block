@@ -2,7 +2,7 @@
 
 For ~20 California points / ETAs / NWS alert combinations it records the feature vector
 (in meta["features"] order) and both LightGBM models' outputs, computed here with the real
-lightgbm library. It also records the per-point formulas and three route-level results, so
+lightgbm library. It also records the per-point formulas and five route-level results, so
 the backend can check its whole risk calculation against Python.
 
 Run from model/:
@@ -29,9 +29,10 @@ INCIDENT = lgb.Booster(model_file=str(HERE / "incident_model.txt"))
 MAJOR = lgb.Booster(model_file=str(HERE / "major_model.txt"))
 
 # Route formula constants (named ASSUMPTIONs, same values as the Java code)
-CELL_KM = 2.5
+ENCOUNTERS_PER_100KM = 0.3     # ASSUMPTION: delaying incidents a truck meets per 100 km, average road and time
 MINOR_INCIDENT_DELAY_MIN = 10  # ASSUMPTION
 MAJOR_INCIDENT_DELAY_MIN = 30  # ASSUMPTION
+MAX_INCIDENT_DELAY_MIN = 120   # cap on expected incident delay per route
 RISK_SCORE_SCALE_MIN = 30
 CAP_LOW, CAP_HIGH = META["route_formula"]["cap_low"], META["route_formula"]["cap_high"]
 
@@ -176,23 +177,27 @@ def build_samples():
 # ----------------------------------------------------------------------------- route formula
 
 def route_result(points):
-    """points: list of per-point dicts (lat, lon, p_incident, major_share, place_rate)."""
-    exposure_h = META["avg_incident_duration_min_2021"] / 60
-    e_sum = base_sum = delay = 0.0
+    """points: list of per-point dicts (lat, lon, p_incident, major_share, place_rate, known)."""
+    incident_km = base_km = delay = 0.0
     no_major = 1.0
     for a, b in zip(points[:-1], points[1:]):  # each point covers the segment to the next one
-        km =haversine_km(a["lat"], a["lon"], b["lat"], b["lon"])
-        cells = km / CELL_KM
-        e = a["p_incident"] * cells * exposure_h
-        e_sum += e
-        base_sum += a["place_rate"] * cells * exposure_h
+        km = haversine_km(a["lat"], a["lon"], b["lat"], b["lon"])
+        rel_network = a["p_incident"] / META["overall_mean_p_2021"]
+        e = ENCOUNTERS_PER_100KM * (km / 100) * rel_network
+        incident_km += a["p_incident"] * km
+        base_km += a["place_rate"] * km
         ms = a["major_share"]
         delay += e * (ms * MAJOR_INCIDENT_DELAY_MIN + (1 - ms) * MINOR_INCIDENT_DELAY_MIN)
         no_major *= 1 - min(1.0, e * ms)
+    uncapped = delay
+    delay = min(delay, MAX_INCIDENT_DELAY_MIN)
+    unknown = sum(not p["known"] for p in points)
     return {
+        "uncapped_incident_delay_min": uncapped,
+        "low_confidence": unknown * 2 > len(points),  # more than half the points on unknown cells
         "expected_incident_delay_min": delay,
         "major_slowdown_probability": 1 - no_major,
-        "incident_risk_ratio": e_sum / base_sum,
+        "incident_risk_ratio": incident_km / base_km,
         "risk_score": int(np.floor(100 * (1 - math.exp(-delay / RISK_SCORE_SCALE_MIN)) + 0.5)),  # Math.round
     }
 
@@ -240,17 +245,21 @@ def main():
             "major_share": platt(mp, mcal["a"], mcal["b"]),
         })
 
-    route_defs = {"north_valley": [14, 13, 12, 11], "mixed": [0, 1, 2, 3, 4, 5], "with_unknown": [15, 16, 17, 18]}
+    route_defs = {"north_valley": [14, 13, 12, 11], "mixed": [0, 1, 2, 3, 4, 5], "with_unknown": [15, 16, 17, 18],
+                  "quiet_known": [19, 7, 6], "half_unknown": [8, 0, 18, 1]}
     routes = [{"name": name, "sample_indices": idx, "expected": route_result([
         {"lat": out_samples[i]["lat"], "lon": out_samples[i]["lon"], "p_incident": out_samples[i]["p_incident"],
-         "major_share": out_samples[i]["major_share"], "place_rate": out_samples[i]["place_rate_2021"]}
+         "major_share": out_samples[i]["major_share"], "place_rate": out_samples[i]["place_rate_2021"],
+         "known": out_samples[i]["known_cell"]}
         for i in idx])} for name, idx in route_defs.items()]
 
     golden = {
         "model_version": META["model_version"],
         "generated_with": {"lightgbm": lgb.__version__, "h3": h3.__version__},
-        "constants": {"cell_km": CELL_KM, "minor_incident_delay_min": MINOR_INCIDENT_DELAY_MIN,
-                      "major_incident_delay_min": MAJOR_INCIDENT_DELAY_MIN, "risk_score_scale_min": RISK_SCORE_SCALE_MIN},
+        "constants": {"encounters_per_100km": ENCOUNTERS_PER_100KM,
+                      "minor_incident_delay_min": MINOR_INCIDENT_DELAY_MIN,
+                      "major_incident_delay_min": MAJOR_INCIDENT_DELAY_MIN,
+                      "max_incident_delay_min": MAX_INCIDENT_DELAY_MIN, "risk_score_scale_min": RISK_SCORE_SCALE_MIN},
         "samples": out_samples,
         "routes": routes,
     }
@@ -258,7 +267,7 @@ def main():
     known = sum(s["known_cell"] for s in out_samples)
     print(f"Wrote {len(out_samples)} samples ({known} known cells) and {len(routes)} routes to golden.json")
     for r in routes:
-        print(r["name"], {k: round(v, 4) for k, v in r["expected"].items()})
+        print(r["name"], {k: (round(v, 4) if isinstance(v, float) else v) for k, v in r["expected"].items()})
 
 
 if __name__ == "__main__":

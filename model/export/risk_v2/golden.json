@@ -5,9 +5,10 @@
     "h3": "4.4.2"
   },
   "constants": {
-    "cell_km": 2.5,
+    "encounters_per_100km": 0.3,
     "minor_incident_delay_min": 10,
     "major_incident_delay_min": 30,
+    "max_incident_delay_min": 120,
     "risk_score_scale_min": 30
   },
   "samples": [
@@ -1724,10 +1725,12 @@
         11
       ],
       "expected": {
-        "expected_incident_delay_min": 342.63399167873763,
+        "uncapped_incident_delay_min": 577.7272688361733,
+        "low_confidence": false,
+        "expected_incident_delay_min": 120,
         "major_slowdown_probability": 1.0,
-        "incident_risk_ratio": 1.1690209942375454,
-        "risk_score": 100
+        "incident_risk_ratio": 1.1690209942375456,
+        "risk_score": 98
       }
     },
     {
@@ -1741,26 +1744,16 @@
         5
       ],
       "expected": {
-        "expected_incident_delay_min": 137.6957808676637,
+        "uncapped_incident_delay_min": 232.1737169776437,
+        "low_confidence": false,
+        "expected_incident_delay_min": 120,
         "major_slowdown_probability": 1.0,
         "incident_risk_ratio": 1.4292441006011156,
-        "risk_score": 99
+        "risk_score": 98
       }
     },
     {
       "name": "with_unknown",
       "sample_indices": [
         15,
-        16,
-        17,
-        18
-      ],
-      "expected": {
-        "expected_incident_delay_min": 7.813702527540474,
-        "major_slowdown_probability": 0.03372511766944741,
-        "incident_risk_ratio": 1.167523782082452,
-        "risk_score": 23
-      }
-    }
-  ]
-}
+        16
