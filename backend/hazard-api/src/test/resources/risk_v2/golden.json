@@ -1753,4 +1753,53 @@
     },
     {
       "name": "with_unknown",
-      "sample_i
+      "sample_indices": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "expected": {
+        "uncapped_incident_delay_min": 0.5709149188810339,
+        "low_confidence": true,
+        "expected_incident_delay_min": 0.5709149188810339,
+        "major_slowdown_probability": 0.0024642900364894027,
+        "incident_risk_ratio": 1.1675237820824522,
+        "risk_score": 5
+      }
+    },
+    {
+      "name": "quiet_known",
+      "sample_indices": [
+        19,
+        7,
+        6
+      ],
+      "expected": {
+        "uncapped_incident_delay_min": 4.511271529676629,
+        "low_confidence": false,
+        "expected_incident_delay_min": 4.511271529676629,
+        "major_slowdown_probability": 0.0353321880738372,
+        "incident_risk_ratio": 1.3732849993047647,
+        "risk_score": 38
+      }
+    },
+    {
+      "name": "half_unknown",
+      "sample_indices": [
+        8,
+        0,
+        18,
+        1
+      ],
+      "expected": {
+        "uncapped_incident_delay_min": 0.011892369693851986,
+        "low_confidence": false,
+        "expected_incident_delay_min": 0.011892369693851986,
+        "major_slowdown_probability": 5.819937405671105e-05,
+        "incident_risk_ratio": 0.5919615332060908,
+        "risk_score": 0
+      }
+    }
+  ]
+}
