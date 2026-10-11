@@ -1,0 +1,91 @@
+{
+  "produce_type": "strawberries",
+  "truck_type": "reefer",
+  "routes": [
+    {
+      "route_id": "A-direct",
+      "departure_time": "2026-07-01T08:00:00Z",
+      "google_duration_min": 360,
+      "points": [
+        {
+          "eta": "2026-07-01T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-01T09:30:00Z",
+          "weather_bucket": "rain"
+        },
+        {
+          "eta": "2026-07-01T11:00:00Z",
+          "weather_bucket": "heavy_rain"
+        },
+        {
+          "eta": "2026-07-01T12:30:00Z",
+          "weather_bucket": "rain"
+        },
+        {
+          "eta": "2026-07-01T14:00:00Z",
+          "weather_bucket": "clear"
+        }
+      ]
+    },
+    {
+      "route_id": "B-coastal",
+      "departure_time": "2026-07-01T08:00:00Z",
+      "google_duration_min": 400,
+      "points": [
+        {
+          "eta": "2026-07-01T08:00:00Z",
+          "weather_bucket": "fog"
+        },
+        {
+          "eta": "2026-07-01T09:20:00Z",
+          "weather_bucket": "fog"
+        },
+        {
+          "eta": "2026-07-01T10:40:00Z",
+          "weather_bucket": "cloudy"
+        },
+        {
+          "eta": "2026-07-01T12:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-01T13:20:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-01T14:40:00Z",
+          "weather_bucket": "clear"
+        }
+      ]
+    },
+    {
+      "route_id": "C-mountain",
+      "departure_time": "2026-07-01T08:00:00Z",
+      "google_duration_min": 400,
+      "points": [
+        {
+          "eta": "2026-07-01T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-01T09:40:00Z",
+          "weather_bucket": "snow"
+        },
+        {
+          "eta": "2026-07-01T11:20:00Z",
+          "weather_bucket": "ice"
+        },
+        {
+          "eta": "2026-07-01T13:00:00Z",
+          "weather_bucket": "thunderstorm"
+        },
+        {
+          "eta": "2026-07-01T14:40:00Z",
+          "weather_bucket": "clear"
+        }
+      ]
+    }
+  ]
+}

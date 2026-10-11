@@ -1,0 +1,26 @@
+{
+  "model_version": "v1.0",
+  "routes": [
+    {
+      "route_id": "A-direct",
+      "shelf_life_remaining_pct": 96.6,
+      "predicted_delay_min": 35.7,
+      "predicted_total_duration_min": 395.7,
+      "peak_cargo_temp_c": 2.3
+    },
+    {
+      "route_id": "B-coastal",
+      "shelf_life_remaining_pct": 96.4,
+      "predicted_delay_min": 19.8,
+      "predicted_total_duration_min": 419.8,
+      "peak_cargo_temp_c": 2.3
+    },
+    {
+      "route_id": "C-mountain",
+      "shelf_life_remaining_pct": 95.5,
+      "predicted_delay_min": 121.8,
+      "predicted_total_duration_min": 521.8,
+      "peak_cargo_temp_c": 2.3
+    }
+  ]
+}
