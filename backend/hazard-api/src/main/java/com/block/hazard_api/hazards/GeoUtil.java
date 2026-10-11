@@ -1,6 +1,6 @@
 package com.block.hazard_api.hazards;
-
-/** Small geometry helpers. The route scorer in hours 5-7 will reuse these. */
+import java.util.List;
+/** Small geometry helpers used across the backend. */
 public final class GeoUtil {
     private static final double EARTH_RADIUS_KM = 6371.0;
 
@@ -18,5 +18,21 @@ public final class GeoUtil {
 
     public static double clamp01(double x) {
         return Math.max(0.0, Math.min(1.0, x));
+    }
+
+    /** True if (lat, lon) is inside the polygon. Polygon points are [lon, lat]. */
+    public static boolean pointInPolygon(double lat, double lon, List<List<Double>> polygon) {
+        boolean inside = false;
+        int n = polygon.size();
+        // Walk each edge: from point j to point i
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            double xi = polygon.get(i).get(0), yi = polygon.get(i).get(1);
+            double xj = polygon.get(j).get(0), yj = polygon.get(j).get(1);
+            // Does this edge straddle our latitude, and is the crossing to the right of us?
+            boolean crosses = (yi > lat) != (yj > lat)
+                    && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi;
+            if (crosses) inside = !inside; // each crossing flips inside/outside
+        }
+        return inside;
     }
 }
