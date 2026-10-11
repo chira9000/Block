@@ -1,0 +1,12 @@
+{
+  "model_version": "v1.0",
+  "routes": [
+    {
+      "route_id": "snow-ice",
+      "shelf_life_remaining_pct": 94.8,
+      "predicted_delay_min": 122.1,
+      "predicted_total_duration_min": 602.1,
+      "peak_cargo_temp_c": 2.3
+    }
+  ]
+}
