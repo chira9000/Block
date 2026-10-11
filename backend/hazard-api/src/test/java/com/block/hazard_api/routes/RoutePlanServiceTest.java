@@ -3,6 +3,7 @@ package com.block.hazard_api.routes;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.block.hazard_api.hazards.LatLng;
+import com.block.hazard_api.scoring.CoefficientRouteScorer;
 import com.block.hazard_api.scoring.RouteScorer;
 import com.block.hazard_api.scoring.ScoreRequest;
 import com.block.hazard_api.scoring.StubRouteScorer;
@@ -85,6 +86,19 @@ class RoutePlanServiceTest {
         assertFalse(best.encodedPolyline().isEmpty());
         assertNotNull(best.hazardsCrossed());
         assertTrue(best.reason().contains("shelf life left"), best.reason());
+    }
+
+    @Test
+    void worksEndToEndWithTheV1Model() {
+        // Rain everywhere: the v1 model adds about 8.7% to the drive time
+        RoutePlanResponse res = service(new FakeRoutes(), new FakeForecasts(p -> true), new CoefficientRouteScorer())
+                .plan(request("strawberries", DEPART));
+
+        assertEquals("v1.0", res.modelVersion());
+        RoutePlanResponse.PlannedRoute best = res.routes().get(0);
+        assertEquals("route-1", best.routeId());
+        assertEquals(170 * 1.0869565217391304, best.predictedTotalDurationMin(), 0.2);
+        assertTrue(best.reason().contains("min of weather delay"), best.reason());
     }
 
     @Test
