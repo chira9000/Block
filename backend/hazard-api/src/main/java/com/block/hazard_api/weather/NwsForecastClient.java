@@ -71,10 +71,12 @@ public class NwsForecastClient {
     private String gridUrlFor(LatLng point) {
         // NWS only accepts up to 4 decimal places; Locale.US makes sure it's "34.05", not "34,05".
         String url = String.format(Locale.US, POINTS_URL, point.lat(), point.lng());
-        return gridUrlByPoint.computeIfAbsent(url, u -> {
-            PointsResponse body = http.get().uri(u).retrieve().body(PointsResponse.class);
-            return body == null || body.properties() == null ? null : body.properties().forecastHourly();
-        });
+        String cached = gridUrlByPoint.get(url);
+        if (cached != null) return cached;
+        PointsResponse body = http.get().uri(url).retrieve().body(PointsResponse.class);
+        String gridUrl = body == null || body.properties() == null ? null : body.properties().forecastHourly();
+        if (gridUrl != null) gridUrlByPoint.put(url, gridUrl);
+        return gridUrl;
     }
 
     private List<PointForecast> periodsFor(String gridUrl) {
