@@ -1,0 +1,17 @@
+test,result,detail
+M1 data integrity,PASS,"6/6: no label leakage, clean year splits, no duplicates"
+"M2 beats place baseline (ROC, PR)",PASS,bootstrap 95% CIs above zero
+"M2 beats place+hour baseline (ROC, PR)",PASS,bootstrap 95% CIs above zero
+M2 overall calibration,PASS,1.015
+M2 calibration where 90% of incidents are,PASS,0.79-1.08
+M2 quietest buckets,WARN,overestimated 1.4-6x (tiny absolute rates)
+M2 winter-alert calibration,WARN,0.43 (underestimated)
+M2 monthly stability,PASS,beats place baseline 10 of 12 months
+M2 seed stability,PASS,PR-AUC 0.0317-0.0321
+M3 major-slowdown ranking,PASS,"AUC 0.678 [0.675, 0.682]"
+M3 major-slowdown calibration,PASS after fix,3.17 -> 1.20 after recalibration to recent year
+M3 duration model,DROPPED,no better than a constant average
+M4 major slowdown per stretch-hour,PASS after fix,3.13 -> 1.17
+M4 impact minutes,FIXED IN SHIP,0.80 with 2020 durations; shipped uses 2021 average
+M5/M9/M10 route scale,PASS with hybrid 2,corridor-week Spearman 0.716 vs 0.718 baseline; best hour-level PR-AUC 0.0328
+"M6 behavior, robustness, speed, export",PASS,"10/10; 3 ms per 1,000 stretch-hours; export exact"

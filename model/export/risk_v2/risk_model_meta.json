@@ -1,0 +1,124 @@
+{
+  "model_version": "risk-v2.1",
+  "h3_resolution": 7,
+  "features": [
+    "nws_winter",
+    "nws_wind",
+    "nws_visibility",
+    "nws_flood",
+    "nws_fire_weather",
+    "nws_heat",
+    "nws_thunder",
+    "nws_max_level",
+    "nws_active_count",
+    "fire_active",
+    "log_fire_acres",
+    "storm_flood",
+    "storm_any",
+    "is_motorway",
+    "road_points",
+    "log_cell_rate",
+    "local_hour",
+    "day_of_week",
+    "month"
+  ],
+  "calibration": {
+    "method": "platt",
+    "a": 0.9187865949866708,
+    "b": -0.11112868355409423,
+    "formula": "p = 1 / (1 + exp(-(a * logit(p_raw) + b)))"
+  },
+  "place_rate_years": [
+    2017,
+    2018,
+    2019,
+    2020
+  ],
+  "unknown_cell_log_rate": -4.845891453309884,
+  "nws_groups": {
+    "nws_winter": [
+      "WS",
+      "WW",
+      "BZ",
+      "ZR",
+      "IS"
+    ],
+    "nws_wind": [
+      "WI",
+      "HW",
+      "EW"
+    ],
+    "nws_visibility": [
+      "FG",
+      "ZF",
+      "DS",
+      "DU",
+      "SM"
+    ],
+    "nws_flood": [
+      "FA",
+      "FF",
+      "FL"
+    ],
+    "nws_fire_weather": [
+      "FW"
+    ],
+    "nws_heat": [
+      "HT",
+      "EH",
+      "XH"
+    ],
+    "nws_thunder": [
+      "SV",
+      "TO"
+    ]
+  },
+  "nws_level": {
+    "W": 3,
+    "A": 2,
+    "Y": 1
+  },
+  "time_features_timezone": "America/Los_Angeles",
+  "evaluation": {
+    "setup": "trained 2017-2019, early-stopped on 2020, calibrated on 2020, tested on 2021",
+    "test_2021": {
+      "log loss": 0.011429497816196519,
+      "ROC-AUC": 0.9117481305757722,
+      "PR-AUC": 0.03176690003982947
+    },
+    "baseline_2021": {
+      "log loss": 0.011646309741279186,
+      "ROC-AUC": 0.9072898259932441,
+      "PR-AUC": 0.02716608582926459
+    }
+  },
+  "shipped_model": "retrained on 2017-2020, calibrated on 2021",
+  "known_limitations": [
+    "Incident risk during winter alerts is underestimated (predicted/actual about 0.4 in 2021 testing)",
+    "Crash data cannot see closures: active wildfires/floods need a separate hazard rule",
+    "No hourly weather yet (ordinary rain not visible to the model)",
+    "US Accidents reporting coverage grows over time; probabilities are calibrated to 2021 levels",
+    "US Accidents severity labels drift strongly across years (major share 43% in 2017 -> 11% in 2021); major model is calibrated to 2021",
+    "Incident durations vary a lot by year (70-130 min averages); a single 2021 average is used",
+    "Within-place multiplier capped to 0.25x-5x to avoid extreme values from rare alert combinations"
+  ],
+  "route_formula": {
+    "p_incident": "place_rate_2021[cell] * clip(p_model / cell_mean_p[cell], cap_low, cap_high)",
+    "p_model": "incident_model.txt raw prediction, then Platt calibration (calibration a, b)",
+    "cap_low": 0.25,
+    "cap_high": 5.0,
+    "p_major_slowdown": "p_incident * Platt(major_model.txt raw prediction; major_calibration a, b)",
+    "expected_incident_impact_min": "p_incident * avg_incident_duration_min_2021 (minutes traffic is affected, not truck delay)",
+    "unknown_cell": "use unknown_cell_log_rate for the model feature, lowest place_rate_2021, overall mean for cell_mean_p, and flag as low confidence"
+  },
+  "major_calibration": {
+    "method": "platt",
+    "a": 1.087662050769413,
+    "b": -1.1713461831445255
+  },
+  "level_scale_2021_vs_2017_2020": 1.3422459624713297,
+  "overall_mean_p_2021": 0.0020566859228684058,
+  "avg_incident_duration_min_2021": 129.76337043756982,
+  "design_choice": "Hybrid 2 chosen by pre-set rule: hour-level PR-AUC 0.0328 (model 0.0319, place 0.0272), ROC-AUC 0.9120; corridor-week Spearman 0.716 vs place baseline 0.718.",
+  "dropped": "duration model: identical results to a constant average duration"
+}
