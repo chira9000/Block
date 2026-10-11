@@ -19,8 +19,27 @@ public record RoutePlanResponse(
             double shelfLifeRemainingPct,      // 0-100, the ranking value
             double peakCargoTempC,
             List<HazardCrossed> hazardsCrossed,
-            String reason                      // short human-readable explanation
-    ) {}
+            String reason,                     // short human-readable explanation
+            // v2 risk model; all null when the risk part is unavailable
+            Integer riskScore,                 // 0-100 from expected incident delay
+            Double incidentRiskRatio,          // incident risk vs normal for these roads (1.0 = normal)
+            Double expectedIncidentDelayMin,   // already included in predictedTotalDurationMin
+            Double majorSlowdownProbability,   // chance of at least one major slowdown, 0-1
+            List<String> riskFlags,            // e.g. "winter_closure_or_chains"
+            List<String> riskReasons,          // up to 3 one-line reasons
+            String riskModelVersion,
+            Boolean riskLowConfidence          // true if some points are on roads the model hasn't seen
+    ) {
+        /** Route card without risk fields. */
+        public PlannedRoute(int rank, String routeId, String encodedPolyline, double distanceKm,
+                            double googleDurationMin, double predictedTotalDurationMin,
+                            double shelfLifeRemainingPct, double peakCargoTempC,
+                            List<HazardCrossed> hazardsCrossed, String reason) {
+            this(rank, routeId, encodedPolyline, distanceKm, googleDurationMin, predictedTotalDurationMin,
+                    shelfLifeRemainingPct, peakCargoTempC, hazardsCrossed, reason,
+                    null, null, null, null, null, null, null, null);
+        }
+    }
 
     /** An active hazard (e.g. an NWS warning) that the route goes through. */
     public record HazardCrossed(

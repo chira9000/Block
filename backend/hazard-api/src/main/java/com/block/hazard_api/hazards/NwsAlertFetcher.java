@@ -6,6 +6,9 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -26,6 +29,9 @@ public class NwsAlertFetcher implements HazardFetcher {
 
     // TODO: put your real email here
     private static final String USER_AGENT = "block-app neil.longlastname@gmail.com";
+
+    // VTEC code, e.g. /O.NEW.KSTO.WS.W.0012.261012T0800Z-261013T1200Z/ -> phenomenon "WS", significance "W"
+    private static final Pattern VTEC = Pattern.compile("^/?[A-Z]\\.[A-Z]{3}\\.[A-Z]{4}\\.([A-Z]{2})\\.([A-Z])\\.");
 
     private final RestClient http;
 
@@ -71,14 +77,27 @@ public class NwsAlertFetcher implements HazardFetcher {
             Instant starts = parseTime(p.onset() != null ? p.onset() : p.effective());
             Instant expires = parseTime(p.ends() != null ? p.ends() : p.expires());
 
+            String[] vtec = vtecCodes(p.parameters());
             out.add(new Hazard(
                     "nws-" + p.id(), "NWS", p.event(), HazardCategory.fromNwsEvent(p.event()), p.headline(),
                     severityScore(p.severity()), center.lat(), center.lng(), radiusKm,
-                    ring, starts, expires));
+                    ring, starts, expires, vtec[0], vtec[1]));
         }
         log.info("NWS alerts: {} with shapes, skipped {} zone-only and {} other/unusable shapes",
                 out.size(), zoneOnly, otherShape);
         return out;
+    }
+
+    /**
+     * {phenom, sig} from the alert's first VTEC string (properties.parameters.VTEC),
+     * or {null, null} when there is none or it doesn't look like a VTEC code.
+     */
+    static String[] vtecCodes(Map<String, List<String>> parameters) {
+        if (parameters == null) return new String[] {null, null};
+        List<String> codes = parameters.get("VTEC");
+        if (codes == null || codes.isEmpty() || codes.get(0) == null) return new String[] {null, null};
+        Matcher m = VTEC.matcher(codes.get(0).trim());
+        return m.find() ? new String[] {m.group(1), m.group(2)} : new String[] {null, null};
     }
 
     private static double severityScore(String s) {
@@ -124,7 +143,8 @@ public class NwsAlertFetcher implements HazardFetcher {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Properties(String id, String event, String headline, String severity,
-                             String effective, String onset, String expires, String ends) {}
+                             String effective, String onset, String expires, String ends,
+                             Map<String, List<String>> parameters) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Geometry(String type, Object coordinates) {}

@@ -42,6 +42,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
+		<!-- H3 hexagon grid: maps a route point to the road cell the v2 risk model was trained on -->
+		<dependency>
+			<groupId>com.uber</groupId>
+			<artifactId>h3</artifactId>
+			<version>4.1.1</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
