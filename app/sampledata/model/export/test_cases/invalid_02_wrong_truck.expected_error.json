@@ -1,4 +1,0 @@
-{
-  "error": "ValueError",
-  "message": "unsupported truck_type 'dry_van': v1 supports only 'reefer'"
-}

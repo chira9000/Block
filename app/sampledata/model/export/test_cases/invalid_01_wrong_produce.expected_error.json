@@ -1,4 +1,0 @@
-{
-  "error": "ValueError",
-  "message": "unsupported produce_type 'lettuce': v1 supports only 'strawberries'"
-}

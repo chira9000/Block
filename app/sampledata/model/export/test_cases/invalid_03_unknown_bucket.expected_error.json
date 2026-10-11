@@ -1,4 +1,0 @@
-{
-  "error": "ValueError",
-  "message": "route 'r1', point 1: unknown weather_bucket 'hail'"
-}
