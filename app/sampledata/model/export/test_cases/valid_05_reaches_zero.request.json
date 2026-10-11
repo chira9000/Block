@@ -1,0 +1,57 @@
+{
+  "produce_type": "strawberries",
+  "truck_type": "reefer",
+  "routes": [
+    {
+      "route_id": "ten-days",
+      "departure_time": "2026-07-01T08:00:00Z",
+      "google_duration_min": 14400,
+      "points": [
+        {
+          "eta": "2026-07-01T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-02T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-03T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-04T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-05T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-06T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-07T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-08T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-09T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-10T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-11T08:00:00Z",
+          "weather_bucket": "clear"
+        }
+      ]
+    }
+  ]
+}

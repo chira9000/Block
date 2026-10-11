@@ -1,0 +1,65 @@
+{
+  "produce_type": "strawberries",
+  "truck_type": "reefer",
+  "routes": [
+    {
+      "route_id": "long-clear",
+      "departure_time": "2026-07-01T08:00:00Z",
+      "google_duration_min": 4320,
+      "points": [
+        {
+          "eta": "2026-07-01T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-01T14:00:00Z",
+          "weather_bucket": "cloudy"
+        },
+        {
+          "eta": "2026-07-01T20:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-02T02:00:00Z",
+          "weather_bucket": "cloudy"
+        },
+        {
+          "eta": "2026-07-02T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-02T14:00:00Z",
+          "weather_bucket": "cloudy"
+        },
+        {
+          "eta": "2026-07-02T20:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-03T02:00:00Z",
+          "weather_bucket": "cloudy"
+        },
+        {
+          "eta": "2026-07-03T08:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-03T14:00:00Z",
+          "weather_bucket": "cloudy"
+        },
+        {
+          "eta": "2026-07-03T20:00:00Z",
+          "weather_bucket": "clear"
+        },
+        {
+          "eta": "2026-07-04T02:00:00Z",
+          "weather_bucket": "cloudy"
+        },
+        {
+          "eta": "2026-07-04T08:00:00Z",
+          "weather_bucket": "clear"
+        }
+      ]
+    }
+  ]
+}

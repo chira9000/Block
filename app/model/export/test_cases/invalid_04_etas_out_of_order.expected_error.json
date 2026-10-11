@@ -1,0 +1,4 @@
+{
+  "error": "ValueError",
+  "message": "route 'r1': etas must be in increasing order (point 2 is not after point 1)"
+}

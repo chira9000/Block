@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors -->
+    <color name="primary">#FFFFFFFF</color>
+    <color name="primary_dark">#0A5DFF</color>
+    <color name="accent">#FFD748</color>
+
+    <!-- Background & Surface -->
+    <color name="bg_light">#F8F9FA</color>
+    <color name="card_surface">#FFFFFF</color>
+    <color name="off_white">#D9E7FF</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#757575</color>
+    <color name ="white">#FFFFFFFF</color>
+</resources>

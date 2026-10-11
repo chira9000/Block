@@ -1,0 +1,112 @@
+{
+  "model_version": "v1.0",
+  "produce_type": "strawberries",
+  "truck_type": "reefer",
+  "cargo_temp": {
+    "formula": "cargo_temp_c = base_c + pallet_offset_c[pallet] + drift_c_per_day * days_since_departure",
+    "base_c": 1.8335723183772281,
+    "pallet_offset_c": {
+      "front": 0.0,
+      "middle": -0.1336169926020186,
+      "rear": 0.43469512604635474
+    },
+    "drift_c_per_day": 0.09864561055277332,
+    "scored_pallet": "rear",
+    "scored_pallet_note": "Scoring uses the REAR pallet: the warmest position on average, so it spoils first.",
+    "inputs_note": "v1 has no outside-weather input for cargo temperature; refrigerated trucks (reefer) only.",
+    "source": "notebooks/02_cargo_temp_model.ipynb, model M2 (linear regression: pallet + days in transit) refit on all 6 shipments"
+  },
+  "shelf_life": {
+    "points": [
+      {
+        "temp_c": 0,
+        "shelf_life_days": 9.0
+      },
+      {
+        "temp_c": 5,
+        "shelf_life_days": 7.0
+      },
+      {
+        "temp_c": 10,
+        "shelf_life_days": 5.0
+      },
+      {
+        "temp_c": 15,
+        "shelf_life_days": 4.0
+      },
+      {
+        "temp_c": 20,
+        "shelf_life_days": 3.0
+      },
+      {
+        "temp_c": 25,
+        "shelf_life_days": 2.0
+      },
+      {
+        "temp_c": 30,
+        "shelf_life_days": 0.3333333333333333
+      }
+    ],
+    "interpolation": "linear between neighbouring points: days = d0 + (temp - t0) * (d1 - d0) / (t1 - t0)",
+    "outside_range": "clamp: below 0 C use the 0 C value, above 30 C use the 30 C value (the study tested 0-30 C only)",
+    "source": "Yan et al., 'Effect of Different Storage Temperature on Respiration Rate and Quality of Strawberry', Journal of Refrigeration (制冷学报), Issue 5, pp. 37-42"
+  },
+  "delay": {
+    "buckets": {
+      "clear": {
+        "speed_reduction": 0.0,
+        "time_factor": 1.0,
+        "basis": "no slowdown"
+      },
+      "cloudy": {
+        "speed_reduction": 0.0,
+        "time_factor": 1.0,
+        "basis": "no slowdown"
+      },
+      "rain": {
+        "speed_reduction": 0.08,
+        "time_factor": 1.0869565217391304,
+        "basis": "FHWA range midpoint"
+      },
+      "heavy_rain": {
+        "speed_reduction": 0.1,
+        "time_factor": 1.1111111111111112,
+        "basis": "FHWA range midpoint"
+      },
+      "fog": {
+        "speed_reduction": 0.11,
+        "time_factor": 1.1235955056179776,
+        "basis": "FHWA range midpoint"
+      },
+      "snow": {
+        "speed_reduction": 0.2,
+        "time_factor": 1.25,
+        "basis": "assumption"
+      },
+      "ice": {
+        "speed_reduction": 0.3,
+        "time_factor": 1.4285714285714286,
+        "basis": "assumption"
+      },
+      "thunderstorm": {
+        "speed_reduction": 0.1,
+        "time_factor": 1.1111111111111112,
+        "basis": "assumption"
+      }
+    },
+    "time_factor_formula": "time_factor = 1 / (1 - speed_reduction)",
+    "source": "FHWA Road Weather Management Program, https://ops.fhwa.dot.gov/weather/roadimpact.htm (rain, heavy_rain, fog = range midpoints; snow, ice, thunderstorm = project assumptions)"
+  },
+  "rules": {
+    "step_minutes": 15,
+    "start_shelf_life_pct": 100,
+    "output_decimals": 1,
+    "delay": "for each stretch between neighbouring points: planned_min = eta[i+1] - eta[i] in minutes; use the WORSE bucket of the two ends (larger speed_reduction); extra_min = planned_min * (time_factor - 1). predicted_delay_min = sum of extra_min, rounded to 1 decimal.",
+    "total_duration": "predicted_total_duration_min = google_duration_min + predicted_delay_min (the rounded delay)",
+    "steps": "split predicted_total_duration_min, starting at departure, into 15-minute steps; the last step is shorter if the total is not a multiple of 15",
+    "step_temperature": "cargo temperature of the scored pallet at the START of each step: days_since_departure = step_start_min / 1440",
+    "shelf_life": "remaining = 100 * (1 - sum over steps of step_hours / (shelf_life_days(step_temperature) * 24)), floored at 0; shelf life starts at 100% at departure",
+    "peak_cargo_temp": "peak_cargo_temp_c = highest step temperature",
+    "rounding": "round every output to 1 decimal, half to even on the exact double value (Python round(); Java: new BigDecimal(x).setScale(1, RoundingMode.HALF_EVEN))"
+  }
+}
