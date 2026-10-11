@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -17,6 +19,8 @@ import org.springframework.web.client.RestClient;
  */
 @Component
 public class NwsAlertFetcher implements HazardFetcher {
+
+    private static final Logger log = LoggerFactory.getLogger(NwsAlertFetcher.class);
 
     private static final String ALERTS_URL = "https://api.weather.gov/alerts/active?area=CA";
 
@@ -47,36 +51,33 @@ public class NwsAlertFetcher implements HazardFetcher {
         List<Hazard> out = new ArrayList<>();
         if (body == null || body.features() == null) return out;
 
+        // Count what we skip so it isn't dropped silently.
+        int zoneOnly = 0, otherShape = 0;
         for (Feature f : body.features()) {
             Properties p = f.properties();
             Geometry g = f.geometry();
+            if (p == null) continue;
             // Some alerts only list county/zone codes with no shape. Skipped for now.
-            if (p == null || g == null || !"Polygon".equals(g.type())) continue;
+            if (g == null) { zoneOnly++; continue; }
+            // MultiPolygon etc. not handled yet.
+            if (!"Polygon".equals(g.type())) { otherShape++; continue; }
 
             List<List<Double>> ring = outerRing(g.coordinates());
-            if (ring.size() < 3) continue;
+            if (ring.size() < 3) { otherShape++; continue; }
 
-            // Center = average of the polygon's points; radius = farthest point from center.
-            double lat = 0, lon = 0;
-            for (List<Double> pt : ring) {
-                lon += pt.get(0);
-                lat += pt.get(1);
-            }
-            lat /= ring.size();
-            lon /= ring.size();
-            double radiusKm = 0;
-            for (List<Double> pt : ring) {
-                radiusKm = Math.max(radiusKm, GeoUtil.haversineKm(lat, lon, pt.get(1), pt.get(0)));
-            }
+            LatLng center = GeoUtil.polygonCenter(ring);
+            double radiusKm = GeoUtil.polygonRadiusKm(ring, center);
 
             Instant starts = parseTime(p.onset() != null ? p.onset() : p.effective());
             Instant expires = parseTime(p.ends() != null ? p.ends() : p.expires());
 
             out.add(new Hazard(
                     "nws-" + p.id(), "NWS", p.event(), p.headline(),
-                    severityScore(p.severity()), lat, lon, radiusKm,
+                    severityScore(p.severity()), center.lat(), center.lng(), radiusKm,
                     ring, starts, expires));
         }
+        log.info("NWS alerts: {} with shapes, skipped {} zone-only and {} other/unusable shapes",
+                out.size(), zoneOnly, otherShape);
         return out;
     }
 
